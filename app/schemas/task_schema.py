@@ -19,7 +19,7 @@ class TaskUpdateSchema(TaskBaseSchema):
     is_completed: Optional[bool] = Field(description='to do | doing | done')
 
 
-class TaskResponseSchema(TaskUpdateSchema):
+class TaskResponseSchema(TaskBaseSchema):
     id: int = Field(..., description='id of the task')
-    # created_at: datetime
-    # updated_at: datetime
+    created_at: datetime
+    updated_at: datetime
