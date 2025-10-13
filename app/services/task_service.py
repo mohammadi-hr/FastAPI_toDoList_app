@@ -1,8 +1,9 @@
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.db.session import get_db
 from app.models.task_model import TaskModel
-from app.schemas.task_schema import TaskCreateSchema, TaskUpdateSchema, TaskResponseSchema
+from app.schemas.task_schema import TaskCreateSchema, TaskUpdateSchema, TaskFilterParams
 from fastapi.responses import JSONResponse
 
 
@@ -41,3 +42,26 @@ def delete_task(task_id: int, db: Session = Depends(get_db)):
         db.delete(task)
         db.commit()
     return JSONResponse({"response": f"task {task_id} deleted"})
+
+
+def tasks_filteraion(filter: TaskFilterParams, db: Session = Depends(get_db)):
+
+    query = db.query(TaskModel)
+
+    if filter.is_completed is not None:
+        query = query.filter(TaskModel.is_completed == filter.is_completed)
+
+    if filter.search:
+        query = query.filter(or_(TaskModel.title.ilike(
+            f"%{filter.search}%")), TaskModel.description.ilike(f"%{filter.search}%"))
+
+    # pagination
+    total = query.count()
+    result = query.offset(filter.offset).limit(filter.limit).all
+
+    return {
+        "total": total,
+        "skip": filter.offset,
+        "limit": filter.limit,
+        "results": result
+    }
