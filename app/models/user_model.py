@@ -2,6 +2,10 @@ from app.db.base import Base
 from pydantic import Field
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, func
 from sqlalchemy.orm import relationship
+from passlib.context import CryptContext
+
+# Initialize a password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class UserModel(Base):
@@ -17,3 +21,12 @@ class UserModel(Base):
                         server_onupdate=func.now())
 
     tasks = relationship("TaskModel", back_populates="user")
+
+    # --- Password methods ---
+    def set_password(self, password: str):
+        """Hashes and stores the password."""
+        self.password = pwd_context.hash(password)
+
+    def verify_password(self, password: str) -> bool:
+        """Verifies a password against the stored hash."""
+        return pwd_context.verify(password, self.password)
