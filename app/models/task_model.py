@@ -18,4 +18,4 @@ class TaskModel(Base):
     updated_at = Column(DateTime, server_default=func.now(),
                         server_onupdate=func.now())
 
-    user = relationship("User", back_populates="tasks", uselist=False)
+    user = relationship("UserModel", back_populates="tasks", uselist=False)

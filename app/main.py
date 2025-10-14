@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from app.api.routes import tasks_route
+from app.api.routes import users_route
 
 app = FastAPI(title="FastAPI Base Project", version="1.0.0")
 
 app.include_router(tasks_route.router, prefix="/tasks", tags=["Tasks"])
+app.include_router(users_route.router, prefix="/users", tags=["Users"])
 
 
 @app.get("/")

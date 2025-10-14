@@ -9,6 +9,7 @@ class TaskBaseSchema(BaseModel):
     description: Optional[str] = Field(max_length=512)
     due_date: Optional[datetime] = Field(
         description='when the task must be done')
+    user_id: int
 
 
 class TaskCreateSchema(TaskBaseSchema):
