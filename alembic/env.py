@@ -7,11 +7,12 @@ from sqlalchemy import pool
 
 from alembic import context
 
-
 from dotenv import load_dotenv
 from app.core.config import settings
 from app.db.base import Base  # your SQLAlchemy models' Base
 
+from app.models.user_model import UserModel
+from app.models.task_model import TaskModel
 # Load environment variables from .env
 load_dotenv()
 
