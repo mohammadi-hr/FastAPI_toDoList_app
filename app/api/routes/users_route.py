@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.user_schema import UserCreateSchema, UserReadSchema, UserUpdateSchema
 from app.services import user_service
+from app.core.api_key_security import get_api_key
 
 router = APIRouter()
 
@@ -13,7 +14,7 @@ def create_user(user_in: UserCreateSchema, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[UserReadSchema])
-def list_users(db: Session = Depends(get_db)):
+def list_users(db: Session = Depends(get_db), api_key: str = Depends(get_api_key)):
     return user_service.get_users(db)
 
 
