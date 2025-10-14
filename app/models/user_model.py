@@ -7,6 +7,7 @@ from typing import cast, List
 from datetime import datetime
 from app.models.task_model import TaskModel
 
+
 # Initialize a password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -25,6 +26,8 @@ class UserModel(Base):
         DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), server_onupdate=func.now())
+
+    token = relationship("TockenModel", back_populates="user")
 
     # Relationship to tasks
     tasks: Mapped[List["TaskModel"]] = relationship(
