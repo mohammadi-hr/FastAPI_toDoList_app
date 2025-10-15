@@ -1,15 +1,20 @@
 from app.db.base import Base
 from pydantic import Field
-from sqlalchemy import Integer, String, DateTime, Boolean, func
+from sqlalchemy import Integer, String, DateTime, Boolean, func, Enum as SQLEnum
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from passlib.context import CryptContext
 from typing import cast, List
 from datetime import datetime
 from app.models.task_model import TaskModel
-
+from enum import Enum
 
 # Initialize a password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+class UserType(str, Enum):
+    ADMIN = "admin"
+    USER = "user"
 
 
 class UserModel(Base):
@@ -26,6 +31,8 @@ class UserModel(Base):
         DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), server_onupdate=func.now())
+    user_type: Mapped[SQLEnum] = mapped_column(
+        SQLEnum(UserType), nullable=True)
 
     token = relationship("TockenModel", back_populates="user")
 
