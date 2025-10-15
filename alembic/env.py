@@ -13,7 +13,7 @@ from app.db.base import Base  # your SQLAlchemy models' Base
 
 from app.models.user_model import UserModel
 from app.models.task_model import TaskModel
-from app.models.tocken_model import TockenModel
+from app.models.token_model import TockenModel
 
 # Load environment variables from .env
 load_dotenv()

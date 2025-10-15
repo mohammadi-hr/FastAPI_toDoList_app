@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status
 from app.db.session import get_db
 from fastapi.security import OAuth2PasswordBearer
-from app.models.tocken_model import TockenModel
+from app.models.token_model import TockenModel
 from app.models.user_model import UserModel
 
 
@@ -37,7 +37,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if not token_entry:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=" توکن نامعتبراست")
-    if token_entry.expires_at < datetime.now():  # type: ignore
+    if datetime.fromtimestamp(token_entry.expires_at) < datetime.now():  # type: ignore
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=" توکن منقضی شده است")
 

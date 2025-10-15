@@ -19,6 +19,15 @@ def create_user(user_in: UserCreateSchema, db: Session = Depends(get_db)) -> Use
     return user
 
 
+def get_user_by_username(username_in: str, db: Session):
+    user = db.query(UserModel).filter(
+        UserModel.username == username_in).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="نام کاربری نامعتبر می باشد")
+    return user
+
+
 def get_users(db: Session = Depends(get_db)) -> list[UserModel]:
     return db.query(UserModel).all()
 

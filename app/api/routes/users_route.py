@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -7,9 +7,15 @@ from app.services import user_service
 from app.core.api_key_security import get_api_key
 from app.models.user_model import UserModel
 from app.services import tocken_service
-from app.models.tocken_model import TockenModel
+from app.models.token_model import TockenModel
 from fastapi.security import OAuth2PasswordBearer
 from app.schemas.token_schema import TokenBaseSchema
+from app.core.jwt_security import create_access_token
+from app.services.jwt_service import refresh_token
+from datetime import timedelta
+from jose import jwt, JWTError
+from app.core.config import settings
+
 router = APIRouter()
 
 
@@ -55,6 +61,71 @@ def logout_user(token_in: TokenBaseSchema, db: Session = Depends(get_db)):  # De
         db.delete(token_entry)
         db.commit()
         return JSONResponse({"پیام": "خروج با موفقیت انجام شد"})
+
+
+# ------------ JWT Authentication -------------
+
+@router.post("/auth/login")
+def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = Depends(get_db)):
+    user = user_service.get_user_by_username(login_in.username, db)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="کاربر یافت نشد")
+    if not tocken_service.verify_password(login_in.password, user.password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="رمز عبور نامعتبر می باشد")
+
+    access_payload = {
+        "user_id": str(user.id),
+        "username": user.username,
+        "type": "access"
+    }
+
+    # Access token (short life)
+    access_token = create_access_token(
+        access_payload, timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+
+    refresh_payload = {
+        "user_id": str(user.id),
+        "username": user.username,
+        "type": "refresh",
+    }
+
+    # Refresh token (long life)
+    refresh_token = create_access_token(
+        refresh_payload, timedelta(days=settings.ACCESS_TOKEN_EXPIRE_DAYS))
+
+    response.set_cookie(key="access_token", value=access_token,
+                        httponly=True,
+                        secure=True,
+                        samesite="strict"
+                        )
+
+    response.set_cookie(key="refresh_token", value=refresh_token,
+                        httponly=True,
+                        secure=True,
+                        samesite="strict"
+                        )
+
+    return JSONResponse({"پیام": "ورود با موفقیت انجام شد",
+                         "access_token": access_token,
+                         "refresh_token": refresh_token})
+
+
+@router.post("/auth/refresh")
+def refresh_user_token(ref_token: str, db: Session = Depends(get_db)):
+    return refresh_token(ref_token, db)
+
+
+@router.post("/auth/logout")
+def logout_by_jwt_cookies(response: Response):
+
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="refrsh_token")
+
+    return {"message": "خروج با موفقیت انجام شد"}
+
+# ------------ END JWT Authentication ---------
 
 
 # @router.get("/", response_model=list[UserReadSchema])
