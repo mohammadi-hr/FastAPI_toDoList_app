@@ -7,11 +7,8 @@ COPY ./requirements.txt .
 RUN pip install -i https://mirror-pypi.runflare.com/simple --no-cache-dir  --upgrade -r ./requirements.txt
 
 # Copy app source
-COPY ./app ./app
-
-# Copy Alembic folder and config
+COPY ./ ./app
 COPY ./alembic ./alembic
 COPY ./alembic.ini ./alembic.ini
-
 
 # CMD ["fastapi", "dev", "--host", "0.0.0.0", "--port", "8000"]
