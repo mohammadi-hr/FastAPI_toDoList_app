@@ -32,7 +32,7 @@ class UserModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), server_onupdate=func.now())
     user_type: Mapped[SQLEnum] = mapped_column(
-        SQLEnum(UserType), nullable=True)
+        SQLEnum(UserType), default=UserType.USER)
 
     token = relationship("TockenModel", back_populates="user")
 
