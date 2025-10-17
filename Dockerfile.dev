@@ -10,5 +10,6 @@ RUN pip install -i https://mirror-pypi.runflare.com/simple --no-cache-dir  --upg
 COPY ./ ./app
 COPY ./alembic ./alembic
 COPY ./alembic.ini ./alembic.ini
+COPY ./.env ./.env
 
 # CMD ["fastapi", "dev", "--host", "0.0.0.0", "--port", "8000"]

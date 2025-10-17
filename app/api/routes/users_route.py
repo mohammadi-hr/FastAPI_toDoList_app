@@ -65,6 +65,10 @@ def logout_user(token_in: TokenBaseSchema, db: Session = Depends(get_db)):  # De
 
 # ------------ JWT Authentication -------------
 
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_DAYS = 7
+
+
 @router.post("/auth/login")
 def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = Depends(get_db)):
     user = user_service.get_user_by_username(login_in.username, db)
@@ -83,7 +87,7 @@ def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = 
 
     # Access token (short life)
     access_token = create_access_token(
-        access_payload, timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+        access_payload, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
 
     refresh_payload = {
         "user_id": str(user.id),
@@ -93,7 +97,7 @@ def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = 
 
     # Refresh token (long life)
     refresh_token = create_access_token(
-        refresh_payload, timedelta(days=settings.ACCESS_TOKEN_EXPIRE_DAYS))
+        refresh_payload, timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS))
 
     response.set_cookie(key="access_token", value=access_token,
                         httponly=True,

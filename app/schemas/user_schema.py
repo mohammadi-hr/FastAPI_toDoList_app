@@ -1,5 +1,8 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
+from enum import Enum
+from sqlalchemy import Enum as SQLEnum
+from app.models.user_model import UserType
 
 
 class UserBaseSchema(BaseModel):
@@ -9,6 +12,7 @@ class UserBaseSchema(BaseModel):
 
 class UserCreateSchema(UserBaseSchema):
     password: str = Field(..., min_length=6, max_length=72)
+    user_type: UserType
 
 
 class UserUpdateSchema(UserBaseSchema):

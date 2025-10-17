@@ -12,12 +12,15 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-ALGORITHM = "HS256"
+
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_DAYS = 7
 
 
 def get_user_by_authorization_header(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=ALGORITHM)
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY,
+                             algorithms=['HS256'])
         user_id = str(payload.get("user_is"))
         if not user_id:
             raise HTTPException(status_code=401, detail="توکن نامعتبر می باشد")
@@ -45,8 +48,8 @@ def get_user_by_token_in_cookie(credentials: HTTPAuthorizationCredentials = Depe
 
     try:
 
-        payload = jwt.decode(access_token, settings.SECRET_KEY, [
-                             settings.ALGORITHM])
+        payload = jwt.decode(
+            access_token, settings.JWT_SECRET_KEY, algorithms=['HS256'])
         user_id = payload.get("user_id")
         if user_id is None:
             raise HTTPException(status_code=401, detail="توکن نامعتبر")
@@ -63,7 +66,7 @@ def get_user_by_token_in_cookie(credentials: HTTPAuthorizationCredentials = Depe
 def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(
-            refresh_token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+            refresh_token, settings.JWT_SECRET_KEY, algorithms=['HS256'])
         if payload.get("type") != "refresh":
             raise HTTPException(
                 status_code=401, detail="Invalid scope for token")
@@ -79,7 +82,7 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     # Create new short-lived access token
     new_access_token = create_access_token(
         data={"user_id": user_id},
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
     return {"access_token": new_access_token, "token_type": "bearer"}
