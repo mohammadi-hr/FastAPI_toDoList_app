@@ -19,10 +19,15 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
       ACCESS_TOKEN_EXPIRE_DAYS: int = 7
       ALGORITHM: str = "HS256"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./app:/usr/src/app/app
@@ -52,5 +57,16 @@ services:
     ports:
       - "5432:5432"
 
-
+  redis:
+      image: redis:7-alpine
+      container_name: redis-cache
+      restart: always
+      ports:
+        - "6379:6379"
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 5s
+        timeout: 3s
+        retries: 5
+        start_period: 10s
 

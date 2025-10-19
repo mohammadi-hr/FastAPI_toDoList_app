@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
+from app.models.task_model import TaskPriority
 
 
 class TaskBaseSchema(BaseModel):
@@ -10,6 +11,7 @@ class TaskBaseSchema(BaseModel):
     due_date: Optional[datetime] = Field(
         description='when the task must be done')
     user_id: int
+    task_priority: TaskPriority = TaskPriority.NORMAL
 
 
 class TaskCreateSchema(TaskBaseSchema):

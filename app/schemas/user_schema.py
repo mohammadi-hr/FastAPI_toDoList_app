@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
@@ -22,7 +23,7 @@ class UserUpdateSchema(UserBaseSchema):
 class UserReadSchema(UserBaseSchema):
     id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime]
 
     class Config:
         orm_mode = True

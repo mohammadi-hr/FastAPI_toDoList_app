@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+import datetime
+import io
+from token import NEWLINE
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -12,9 +15,18 @@ from fastapi.security import OAuth2PasswordBearer
 from app.schemas.token_schema import TokenBaseSchema
 from app.core.jwt_security import create_access_token
 from app.services.jwt_service import refresh_token
-from datetime import timedelta
+from datetime import timedelta, datetime
 from jose import jwt, JWTError
 from app.core.config import settings
+from fastapi_cache.decorator import cache
+import os
+import csv
+import io
+import json
+from app.scripts.dummy_user_generator import DummyUserGenerator
+from app.schemas.user_schema import UserReadSchema
+from typing import List
+
 
 router = APIRouter()
 
@@ -111,6 +123,22 @@ def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = 
                         samesite="strict"
                         )
 
+    # write tokens as a json data to the file
+    os.makedirs("static", exist_ok=True)
+    with open("static/jwt_token.txt", "a") as token_writer:
+
+        token_data_string = {
+            "user_id": user.id,
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
+
+        json.dump(token_data_string, token_writer, indent=2)
+
+        # token_writer.write(
+        #     f"user_id: {user.id}\naccess_token: {access_token}\nrefresh_token: {refresh_token}\n")
+        # print(f"size of the token file is: {write_token.tell()}")
+
     return JSONResponse({"پیام": "ورود با موفقیت انجام شد",
                          "access_token": access_token,
                          "refresh_token": refresh_token})
@@ -154,3 +182,63 @@ def update_user(user_id: int, user_in: UserUpdateSchema, db: Session = Depends(g
 @router.delete("/{user_id}", status_code=204)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     return user_service.delete_user(user_id, db)
+
+# --------- Users to csv file ---------
+
+
+@router.post("/export")
+def export_users_csv(db: Session = Depends(get_db)):
+    users = user_service.get_users(db)
+    users_data = [
+        {k: v for k, v in user.__dict__.items() if k != '_sa_instance_state'} for user in users
+    ]
+
+    with io.StringIO() as in_memory_text_stream:
+        writer = csv.DictWriter(in_memory_text_stream, fieldnames=[
+            "username", "password", "user_type", "tasks", "is_active", "id", "created_at", "updated_at"])
+        writer.writeheader()
+        writer.writerows(users_data)
+
+        csv_data = in_memory_text_stream.getvalue()
+
+        csv_filename = f"users_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+        os.makedirs("log/exports", exist_ok=True)
+        file_path = os.path.join("log/exports", csv_filename)
+
+        # save csv file on the server
+        with open(file_path, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=[
+                "username", "password", "user_type", "tasks", "is_active", "id", "created_at", "updated_at"], quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            writer.writeheader()
+            writer.writerows(users_data)
+
+        # Download csv file
+        return Response(
+            content=csv_data,
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={csv_filename}"}
+        )
+
+# ---------------- feed users table ----------------
+
+
+@router.post("/gen", response_model=List[UserReadSchema])
+def feed_users_table(users: int, created_from: datetime, db: Session = Depends(get_db)):
+    dummy_users = DummyUserGenerator(users, created_from)
+    dummy_users_list = dummy_users.gen_all_users()
+    try:
+        # db.bulk_save_objects(dummy_users_list)
+
+        for dm in dummy_users_list:
+            db.add(dm)
+        db.commit()  # ✅ now IDs are assigned
+
+        for dm in dummy_users_list:
+            db.refresh(dm)
+
+    except Exception as e:
+        db.rollback()
+        print(f"Feeding users table failed ! Error : {e}")
+
+    return dummy_users_list
