@@ -7,17 +7,43 @@ from app.db.session import get_db
 from sqlalchemy.orm import Session
 from app.services.jwt_service import get_user_by_token_in_cookie
 from app.models.user_model import UserModel
-from fastapi_cache.decorator import cache
 from urllib.request import urlopen
 import json
 from app.scripts.dummy_task_generator import DummyTaskGenerator
+from app.core.redis import get_redis
 
 router = APIRouter()
 
 
 @router.get("/", response_model=list[TaskResponseSchema])
-def get_tasks(user: UserModel = Depends(get_user_by_token_in_cookie), db: Session = Depends(get_db)):
-    return task_service.get_tasks(user, db)
+async def get_tasks(user: UserModel = Depends(get_user_by_token_in_cookie), db: Session = Depends(get_db), redis=Depends(get_redis)):
+
+    cache_key = "tasks:all"
+    cached = await redis.get(cache_key)
+
+    if cached:
+        print(" Redis Cache Hit !")
+        return json.loads(cached)
+    print(" Redis Cache Miss !")
+    tasks = task_service.get_tasks(user, db)
+    tasks_data = [
+        {
+            "id": t.id,
+            "user_id": t.user_id,
+            "title": t.title,
+            "description": t.description,
+            "priority": t.priority,
+            "created_at": getattr(t.created_at, "isoformat", lambda: None)(),
+            "updated_at": getattr(t.updated_at, "isoformat", lambda: None)(),
+            "due_date": getattr(t.due_date, "isoformat", lambda: None)(),
+            "is_completed": t.is_completed
+
+        } for t in tasks
+    ]
+
+    await redis.set(cache_key, json.dumps(tasks_data), ex=120)
+
+    return tasks_data
 
 
 @router.get("/{taskid}", response_model=TaskResponseSchema)
@@ -26,17 +52,22 @@ def get_task(task_id: int, user: UserModel = Depends(get_user_by_token_in_cookie
 
 
 @router.post("/", response_model=TaskResponseSchema)
-def create_task(task_add: TaskCreateSchema, user: UserModel = Depends(get_user_by_token_in_cookie), db: Session = Depends(get_db)):
-    return task_service.create_task(user, task_add, db)
+async def create_task(task_add: TaskCreateSchema, user: UserModel = Depends(get_user_by_token_in_cookie), db: Session = Depends(get_db), redis=Depends(get_redis)):
+
+    task = task_service.create_task(user, task_add, db)
+
+    await redis.delete("tasks:all")
+
+    return task
 
 
 @router.put("/{taskid}", response_model=TaskResponseSchema)
-def update_task(task_add: TaskUpdateSchema, task_id: int, user: UserModel = Depends(get_user_by_token_in_cookie), db: Session = Depends(get_db)):
+async def update_task(task_add: TaskUpdateSchema, task_id: int, user: UserModel = Depends(get_user_by_token_in_cookie), db: Session = Depends(get_db), redis=Depends(get_redis)):
     return task_service.update_task(user, task_id, task_add, db)
 
 
 @router.delete("/{taskid}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(task_id, user: UserModel = Depends(get_user_by_token_in_cookie), db: Session = Depends(get_db)):
+async def delete_task(task_id, user: UserModel = Depends(get_user_by_token_in_cookie), db: Session = Depends(get_db), redis=Depends(get_redis)):
     task_service.delete_task(user, task_id, db)
 
 

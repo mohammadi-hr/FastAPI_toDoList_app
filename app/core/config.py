@@ -6,7 +6,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "FastAPI Base To_Do_List Project"
     VERSION: str = "1.0.0"
 
-    REDIS_URL: str
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: str
+
     # add API KEY Authentication into the project
     API_KEY: str
     JWT_SECRET_KEY: str

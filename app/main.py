@@ -3,20 +3,21 @@ from app.api.routes import tasks_route
 from app.api.routes import users_route
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from redis import asyncio as aioredis
+from app.core.redis import get_redis
 from contextlib import asynccontextmanager
 from app.core.config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    redis = aioredis.from_url(
-        settings.REDIS_URL, encoding="utf8", decode_responses=True)
+    # Initialize Redis connection manually
+    redis = await get_redis()
+    # Initialize FastAPI Cache system
     FastAPICache.init(RedisBackend(redis), prefix=settings.PROJECT_NAME)
     print("✅ Redis Distributed Cache initialized")
     yield
     await redis.close()
-    print("🧹 Redis Cache connection closed")
+    print("Redis Cache connection closed")
 
 app = FastAPI(lifespan=lifespan, title="FastAPI Base To_Do_List Project",
               version="1.0.0", summary="A Simple Task Management Application")
