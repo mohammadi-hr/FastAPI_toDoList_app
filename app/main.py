@@ -19,8 +19,13 @@ async def lifespan(app: FastAPI):
     await redis.close()
     print("Redis Cache connection closed")
 
-app = FastAPI(lifespan=lifespan, title="FastAPI Base To_Do_List Project",
-              version="1.0.0", summary="A Simple Task Management Application")
+
+app = FastAPI(
+    lifespan=lifespan,
+    title="FastAPI Base To_Do_List Project",
+    version="1.0.0",
+    summary="A Simple Task Management Application",
+)
 
 
 app.include_router(tasks_route.router, prefix="/tasks", tags=["Tasks"])

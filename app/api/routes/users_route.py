@@ -1,13 +1,15 @@
-import datetime
 import io
-from token import NEWLINE
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.schemas.user_schema import UserCreateSchema, UserReadSchema, UserUpdateSchema, UserLoginSchema
+from app.schemas.user_schema import (
+    UserCreateSchema,
+    UserReadSchema,
+    UserUpdateSchema,
+    UserLoginSchema,
+)
 from app.services import user_service
-from app.core.api_key_security import get_api_key
 from app.models.user_model import UserModel
 from app.services import tocken_service
 from app.models.token_model import TockenModel
@@ -16,15 +18,10 @@ from app.schemas.token_schema import TokenBaseSchema
 from app.core.jwt_security import create_access_token
 from app.services.jwt_service import refresh_token
 from datetime import timedelta, datetime
-from jose import jwt, JWTError
-from app.core.config import settings
-from fastapi_cache.decorator import cache
 import os
 import csv
-import io
 import json
 from app.scripts.dummy_user_generator import DummyUserGenerator
-from app.schemas.user_schema import UserReadSchema
 from typing import List
 
 
@@ -41,17 +38,21 @@ def login_user(user_login: UserLoginSchema, db: Session = Depends(get_db)):
     user = db.query(UserModel).filter_by(
         username=user_login.username).one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="کابر مورد نظر یاقت نشد")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="کابر مورد نظر یاقت نشد"
+        )
     if not tocken_service.verify_password(user_login.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="نام کاربری یا رمز عبور اشتباه است")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="نام کاربری یا رمز عبور اشتباه است",
+        )
 
     access_tocken = tocken_service.create_access_token()
     expire_at = tocken_service.token_expiration()
 
     token_entry = TockenModel(
-        user_id=user.id, tocken=access_tocken, expires_at=expire_at)
+        user_id=user.id, tocken=access_tocken, expires_at=expire_at
+    )
     db.add(token_entry)
     db.commit()
     db.refresh(token_entry)
@@ -63,12 +64,15 @@ oauth2_scheme = OAuth2PasswordBearer("/logout")
 
 
 @router.post("/logout")
-def logout_user(token_in: TokenBaseSchema, db: Session = Depends(get_db)):  # Depends(oauth2_scheme)
+def logout_user(
+    token_in: TokenBaseSchema, db: Session = Depends(get_db)
+):  # Depends(oauth2_scheme)
     token_entry = db.query(TockenModel).filter_by(
         tocken=token_in.token).first()
     if not token_entry:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="کابر مورد نظر یاقت نشد")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="کابر مورد نظر یاقت نشد"
+        )
     if token_entry:
         db.delete(token_entry)
         db.commit()
@@ -77,29 +81,35 @@ def logout_user(token_in: TokenBaseSchema, db: Session = Depends(get_db)):  # De
 
 # ------------ JWT Authentication -------------
 
+
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 
 
 @router.post("/auth/login")
-def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = Depends(get_db)):
+def jwt_user_login(
+    login_in: UserLoginSchema, response: Response, db: Session = Depends(get_db)
+):
     user = user_service.get_user_by_username(login_in.username, db)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="کاربر یافت نشد")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="کاربر یافت نشد"
+        )
     if not tocken_service.verify_password(login_in.password, user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail="رمز عبور نامعتبر می باشد")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="رمز عبور نامعتبر می باشد"
+        )
 
     access_payload = {
         "user_id": str(user.id),
         "username": user.username,
-        "type": "access"
+        "type": "access",
     }
 
     # Access token (short life)
     access_token = create_access_token(
-        access_payload, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+        access_payload, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
 
     refresh_payload = {
         "user_id": str(user.id),
@@ -109,19 +119,24 @@ def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = 
 
     # Refresh token (long life)
     refresh_token = create_access_token(
-        refresh_payload, timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS))
+        refresh_payload, timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    )
 
-    response.set_cookie(key="access_token", value=access_token,
-                        httponly=True,
-                        secure=True,
-                        samesite="strict"
-                        )
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
 
-    response.set_cookie(key="refresh_token", value=refresh_token,
-                        httponly=True,
-                        secure=True,
-                        samesite="strict"
-                        )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
 
     # write tokens as a json data to the file
     os.makedirs("static", exist_ok=True)
@@ -130,7 +145,7 @@ def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = 
         token_data_string = {
             "user_id": user.id,
             "access_token": access_token,
-            "refresh_token": refresh_token
+            "refresh_token": refresh_token,
         }
 
         json.dump(token_data_string, token_writer, indent=2)
@@ -139,9 +154,13 @@ def jwt_user_login(login_in: UserLoginSchema, response: Response, db: Session = 
         #     f"user_id: {user.id}\naccess_token: {access_token}\nrefresh_token: {refresh_token}\n")
         # print(f"size of the token file is: {write_token.tell()}")
 
-    return JSONResponse({"پیام": "ورود با موفقیت انجام شد",
-                         "access_token": access_token,
-                         "refresh_token": refresh_token})
+    return JSONResponse(
+        {
+            "پیام": "ورود با موفقیت انجام شد",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        }
+    )
 
 
 @router.post("/auth/refresh")
@@ -157,12 +176,14 @@ def logout_by_jwt_cookies(response: Response):
 
     return {"message": "خروج با موفقیت انجام شد"}
 
+
 # ------------ END JWT Authentication ---------
 
 
 # @router.get("/", response_model=list[UserReadSchema])
 # def list_users(db: Session = Depends(get_db), api_key: str = Depends(get_api_key)):
 #     return user_service.get_users(db)
+
 
 @router.get("/", response_model=list[UserReadSchema])
 def list_users(db: Session = Depends(get_db)):
@@ -183,6 +204,7 @@ def update_user(user_id: int, user_in: UserUpdateSchema, db: Session = Depends(g
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     return user_service.delete_user(user_id, db)
 
+
 # --------- Users to csv file ---------
 
 
@@ -190,12 +212,24 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 def export_users_csv(db: Session = Depends(get_db)):
     users = user_service.get_users(db)
     users_data = [
-        {k: v for k, v in user.__dict__.items() if k != '_sa_instance_state'} for user in users
+        {k: v for k, v in user.__dict__.items() if k != "_sa_instance_state"}
+        for user in users
     ]
 
     with io.StringIO() as in_memory_text_stream:
-        writer = csv.DictWriter(in_memory_text_stream, fieldnames=[
-            "username", "password", "user_type", "tasks", "is_active", "id", "created_at", "updated_at"])
+        writer = csv.DictWriter(
+            in_memory_text_stream,
+            fieldnames=[
+                "username",
+                "password",
+                "user_type",
+                "tasks",
+                "is_active",
+                "id",
+                "created_at",
+                "updated_at",
+            ],
+        )
         writer.writeheader()
         writer.writerows(users_data)
 
@@ -208,8 +242,21 @@ def export_users_csv(db: Session = Depends(get_db)):
 
         # save csv file on the server
         with open(file_path, mode="w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=[
-                "username", "password", "user_type", "tasks", "is_active", "id", "created_at", "updated_at"], quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            writer = csv.DictWriter(
+                file,
+                fieldnames=[
+                    "username",
+                    "password",
+                    "user_type",
+                    "tasks",
+                    "is_active",
+                    "id",
+                    "created_at",
+                    "updated_at",
+                ],
+                quotechar='"',
+                quoting=csv.QUOTE_NONNUMERIC,
+            )
             writer.writeheader()
             writer.writerows(users_data)
 
@@ -217,8 +264,9 @@ def export_users_csv(db: Session = Depends(get_db)):
         return Response(
             content=csv_data,
             media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={csv_filename}"}
+            headers={"Content-Disposition": f"attachment; filename={csv_filename}"},
         )
+
 
 # ---------------- feed users table ----------------
 

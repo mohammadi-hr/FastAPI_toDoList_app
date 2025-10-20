@@ -1,10 +1,6 @@
-
-from datetime import datetime, timezone, tzinfo
-from fastapi import Depends
+from datetime import datetime, timezone
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
-from app.db.session import SessionLocal
-from app.models.user_model import UserModel, UserType
+from app.models.user_model import UserModel
 from faker import Faker
 import random
 
@@ -25,7 +21,11 @@ class DummyUserGenerator:
         return self.pwd_context.hash(self.faker.password())
 
     def gen_fake_datetime(self):
-        return self.faker.date_time_between(start_date=self.created_from, end_date=datetime.now(tz=self.utc), tzinfo=self.utc)
+        return self.faker.date_time_between(
+            start_date=self.created_from,
+            end_date=datetime.now(tz=self.utc),
+            tzinfo=self.utc,
+        )
 
     def gen_fake_user(self):
 
@@ -34,7 +34,7 @@ class DummyUserGenerator:
             password=self.gen_fake_password(),
             user_type=random.choice(["ADMIN", "USER"]),
             created_at=self.gen_fake_datetime(),
-            is_active=random.choice([True, False])
+            is_active=random.choice([True, False]),
         )
 
         return user

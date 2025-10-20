@@ -12,7 +12,9 @@ def get_tasks(user: UserModel, db: Session = Depends(get_db)):
     return db.query(TaskModel).filter_by(user_id=user.id).all()
 
 
-def create_task(user: UserModel, user_add: TaskCreateSchema, db: Session = Depends(get_db)):
+def create_task(
+    user: UserModel, user_add: TaskCreateSchema, db: Session = Depends(get_db)
+):
     task = TaskModel(**user_add.model_dump())
     db.add(task)
     db.commit()
@@ -21,15 +23,20 @@ def create_task(user: UserModel, user_add: TaskCreateSchema, db: Session = Depen
 
 
 def get_task(user: UserModel, task_id: int, db: Session = Depends(get_db)):
-    task = db.query(TaskModel).filter_by(
-        id=task_id, user_id=user.id).one_or_none()
+    task = db.query(TaskModel).filter_by(id=task_id, user_id=user.id).one_or_none()
     if not task:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="task not found")
+            status_code=status.HTTP_404_NOT_FOUND, detail="task not found"
+        )
     return task
 
 
-def update_task(user: UserModel, task_id: int, task_update: TaskUpdateSchema, db: Session = Depends(get_db)):
+def update_task(
+    user: UserModel,
+    task_id: int,
+    task_update: TaskUpdateSchema,
+    db: Session = Depends(get_db),
+):
     task = get_task(user, task_id, db)
     for field, value in task_update.model_dump(exclude_unset=True).items():
         setattr(task, field, value)
@@ -54,8 +61,10 @@ def tasks_filteraion(filter: TaskFilterParams, db: Session = Depends(get_db)):
         query = query.filter(TaskModel.is_completed == filter.is_completed)
 
     if filter.search:
-        query = query.filter(or_(TaskModel.title.ilike(
-            f"%{filter.search}%")), TaskModel.description.ilike(f"%{filter.search}%"))
+        query = query.filter(
+            or_(TaskModel.title.ilike(f"%{filter.search}%")),
+            TaskModel.description.ilike(f"%{filter.search}%"),
+        )
 
     # pagination
     total = query.count()
@@ -65,5 +74,5 @@ def tasks_filteraion(filter: TaskFilterParams, db: Session = Depends(get_db)):
         "total": total,
         "skip": filter.offset,
         "limit": filter.limit,
-        "results": result
+        "results": result,
     }

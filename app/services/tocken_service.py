@@ -31,19 +31,24 @@ def token_expiration(minutes=30):
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/login")
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
 
     token_entry = db.query(TockenModel).filter_by(tocken=token).first()
     if not token_entry:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=" توکن نامعتبراست")
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=" توکن نامعتبراست"
+        )
     if datetime.fromtimestamp(token_entry.expires_at) < datetime.now():  # type: ignore
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=" توکن منقضی شده است")
+            status_code=status.HTTP_401_UNAUTHORIZED, detail=" توکن منقضی شده است"
+        )
 
     user = db.query(UserModel).filter_by(user_id=token_entry.user_id).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_UNAUTHORIZED, detail="کابر یافت نشد")
+            status_code=status.HTTP_404_UNAUTHORIZED, detail="کابر یافت نشد"
+        )
 
     return user

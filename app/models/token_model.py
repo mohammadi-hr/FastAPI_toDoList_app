@@ -1,9 +1,7 @@
-
 from app.db.base import Base
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from app.models.user_model import UserModel
 
 
 class TockenModel(Base):

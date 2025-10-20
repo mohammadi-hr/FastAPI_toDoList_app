@@ -1,7 +1,16 @@
 from app.db.base import Base
-from pydantic import Field
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, func, ForeignKey, Enum as SQLEnum
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    DateTime,
+    Boolean,
+    func,
+    ForeignKey,
+    Enum as SQLEnum,
+)
 from sqlalchemy.orm import relationship
 
 
@@ -24,7 +33,7 @@ class TaskModel(Base):
     priority = Column(
         SQLEnum(TaskPriority, name="priority_enum"),
         nullable=False,
-        default=TaskPriority.NORMAL
+        default=TaskPriority.NORMAL,
     )
 
     due_date = Column(DateTime, default=None)

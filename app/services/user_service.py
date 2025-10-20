@@ -6,8 +6,9 @@ from app.db.session import get_db
 
 
 def create_user(user_in: UserCreateSchema, db: Session = Depends(get_db)) -> UserModel:
-    existing = db.query(UserModel).filter(
-        UserModel.username == user_in.username).first()
+    existing = (
+        db.query(UserModel).filter(UserModel.username == user_in.username).first()
+    )
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
 
@@ -20,11 +21,11 @@ def create_user(user_in: UserCreateSchema, db: Session = Depends(get_db)) -> Use
 
 
 def get_user_by_username(username_in: str, db: Session):
-    user = db.query(UserModel).filter(
-        UserModel.username == username_in).first()
+    user = db.query(UserModel).filter(UserModel.username == username_in).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="نام کاربری نامعتبر می باشد")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="نام کاربری نامعتبر می باشد"
+        )
     return user
 
 
@@ -39,7 +40,9 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)) -> UserModel:
     return user
 
 
-def update_user(user_id: int, user_in: UserUpdateSchema, db: Session = Depends(get_db)) -> UserModel:
+def update_user(
+    user_id: int, user_in: UserUpdateSchema, db: Session = Depends(get_db)
+) -> UserModel:
     user = get_user_by_id(user_id, db)
 
     user.username = user_in.username

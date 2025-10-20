@@ -1,9 +1,8 @@
 from app.db.base import Base
-from pydantic import Field
 from sqlalchemy import Integer, String, DateTime, Boolean, func, Enum as SQLEnum
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from passlib.context import CryptContext
-from typing import cast, List
+from typing import List
 from datetime import datetime
 from app.models.task_model import TaskModel
 from enum import Enum
@@ -30,7 +29,8 @@ class UserModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), server_onupdate=func.now())
+        DateTime, server_default=func.now(), server_onupdate=func.now()
+    )
     user_type: Mapped[SQLEnum] = mapped_column(
         SQLEnum(UserType), default=UserType.USER)
 
@@ -38,9 +38,7 @@ class UserModel(Base):
 
     # Relationship to tasks
     tasks: Mapped[List["TaskModel"]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
 
     # --- Password methods ---

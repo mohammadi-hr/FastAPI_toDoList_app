@@ -1,8 +1,6 @@
-
-from datetime import UTC, datetime, timezone, tzinfo
+from datetime import datetime, timezone
 from enum import Enum
 import random
-import string
 from faker import Faker
 
 
@@ -14,9 +12,15 @@ class DummyTaskPeriority(Enum):
 
 
 class DummyTaskGenerator:
-    'A class to genarate dummy tasks for initialization of database records for testing application processes'
+    "A class to genarate dummy tasks for initialization of database records for testing application processes"
 
-    def __init__(self, total_tasks: int, total_users: int, start_time: datetime, end_time: datetime):
+    def __init__(
+        self,
+        total_tasks: int,
+        total_users: int,
+        start_time: datetime,
+        end_time: datetime,
+    ):
         self.number_of_tasks = total_tasks
         self.number_of_users = total_users
         self.start_datetime = start_time
@@ -26,7 +30,7 @@ class DummyTaskGenerator:
 
     def generate_title(self):
         """Generate a short random title for a task"""
-        return self.faker.sentence(nb_words=4).strip('.')
+        return self.faker.sentence(nb_words=4).strip(".")
 
     def generate_description(self):
         """Generate a realistic paragraph description"""
