@@ -30,7 +30,8 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserReadSchema)
 def register_user(user_in: UserCreateSchema, db: Session = Depends(get_db)):
-    return user_service.create_user(user_in, db)
+    user = user_service.create_user(user_in, db)
+    return JSONResponse(status_code=status.HTTP_201_CREATED, content={"details": "ثبت نام با موفقیت انجام شد"})
 
 
 @router.post("/login", response_model=UserReadSchema)
@@ -274,7 +275,7 @@ def export_users_csv(db: Session = Depends(get_db)):
 @router.post("/gen", response_model=List[UserReadSchema])
 def feed_users_table(users: int, created_from: datetime, db: Session = Depends(get_db)):
     dummy_users = DummyUserGenerator(users, created_from)
-    dummy_users_list = dummy_users.gen_all_users()
+    dummy_users_list = dummy_users.gen_all_users(dummy_users.total_users)
     try:
         # db.bulk_save_objects(dummy_users_list)
 
