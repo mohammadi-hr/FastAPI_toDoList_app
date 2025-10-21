@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from jose import jwt, JWTError, ExpiredSignatureError
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -37,33 +37,44 @@ def get_user_by_authorization_header(
     return user
 
 
-bearer_scheme = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_user_by_token_in_cookie(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ):
+    # 🔹 Handle missing credentials manually (was 403 before)
+    if credentials is None or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="توکن access یافت نشد",
+        )
 
-    # access_token = request.cookies.get("access_token")
     access_token = credentials.credentials
-    if not access_token:
-        raise HTTPException(status_code=401, detail="توکن access یافت نشد")
 
     try:
-
         payload = jwt.decode(
             access_token, settings.JWT_SECRET_KEY, algorithms=["HS256"]
         )
         user_id = payload.get("user_id")
         if user_id is None:
-            raise HTTPException(status_code=401, detail="توکن نامعتبر")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="توکن نامعتبر",
+            )
     except JWTError:
-        raise HTTPException(status_code=401, detail="توکن منقضی یا نامعتبر")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="توکن منقضی یا نامعتبر",
+        )
 
     user = get_user_by_id(user_id, db)
     if not user:
-        raise HTTPException(status_code=401, detail="کاربر یافت نشد")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="کاربر یافت نشد",
+        )
 
     return user
 
@@ -75,17 +86,22 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
         )
         if payload.get("type") != "refresh":
             raise HTTPException(
-                status_code=401, detail="Invalid scope for token")
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid scope for token",
+            )
 
         user_id = payload.get("user_id")
         if user_id is None:
             raise HTTPException(
-                status_code=401, detail="Invalid token payload")
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload",
+            )
     except JWTError:
         raise HTTPException(
-            status_code=401, detail="Invalid or expired refresh token")
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
 
-    # Create new short-lived access token
     new_access_token = create_access_token(
         data={"user_id": user_id},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),

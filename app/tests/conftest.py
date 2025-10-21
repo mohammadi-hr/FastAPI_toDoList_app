@@ -54,7 +54,7 @@ def client():
         yield c
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='package', autouse=True)
 def gen_dummy_users():
     dummy_user_generator = DummyUserGenerator(
         20, datetime(2022, 10, 14, 15, 10, 45))
