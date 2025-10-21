@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     FastAPICache.init(RedisBackend(redis), prefix=settings.PROJECT_NAME)
     print("✅ Redis Distributed Cache initialized")
     yield
-    await redis.close()
+    await redis.aclose()
     print("Redis Cache connection closed")
 
 

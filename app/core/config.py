@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+import os
 
 
 class Settings(BaseSettings):
@@ -8,15 +9,18 @@ class Settings(BaseSettings):
 
     REDIS_HOST: str
     REDIS_PORT: int
-    REDIS_DB: str
+    REDIS_DB: int
 
     # add API KEY Authentication into the project
     API_KEY: str
     JWT_SECRET_KEY: str
     ALGORITHM: str
+    SQLALCHEMY_TEST_DATABASE_URL: str = "sqlite:///:memory:"
 
     class Config:
-        env_file = ".env"
+        env_file = (
+            ".env.test" if "PYTEST_CURRENT_TEST" in os.environ else ".env"
+        )
         env_file_encoding = "utf-8"
 
 
