@@ -30,7 +30,10 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserReadSchema)
 def register_user(user_in: UserCreateSchema, db: Session = Depends(get_db)):
-    user = user_service.create_user(user_in, db)
+    try:
+        user = user_service.create_user(user_in, db)
+    except Exception as error:
+        raise error
     return JSONResponse(status_code=status.HTTP_201_CREATED, content={"details": "ثبت نام با موفقیت انجام شد"})
 
 

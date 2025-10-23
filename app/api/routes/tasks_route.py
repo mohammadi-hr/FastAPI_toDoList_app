@@ -21,19 +21,19 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[TaskResponseSchema])
-async def get_tasks(
+def get_tasks(
     user: UserModel = Depends(get_user_by_token_in_cookie),
     db: Session = Depends(get_db),
-    redis=Depends(get_redis),
+    # redis=Depends(get_redis),
 ):
 
-    cache_key = "tasks:all"
-    cached = await redis.get(cache_key)
-
-    if cached:
-        print(" Redis Cache Hit !")
-        return json.loads(cached)
-    print(" Redis Cache Miss !")
+    # cache_key = "tasks:all"
+    # cached = await redis.get(cache_key)
+    #
+    # if cached:
+    #     print(" Redis Cache Hit !")
+    #     return json.loads(cached)
+    # print(" Redis Cache Miss !")
     tasks = task_service.get_tasks(user, db)
     tasks_data = [
         {
@@ -50,7 +50,7 @@ async def get_tasks(
         for t in tasks
     ]
 
-    await redis.set(cache_key, json.dumps(tasks_data), ex=120)
+    # await redis.set(cache_key, json.dumps(tasks_data), ex=120)
 
     return tasks_data
 
