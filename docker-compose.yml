@@ -22,12 +22,21 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379/0
+
+      # ✅ اضافه شده برای RabbitMQ
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: rabbit
+      RABBITMQ_PASSWORD: rabbit
+
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     volumes:
       - ./app:/usr/src/app/app
@@ -73,4 +82,58 @@ services:
         timeout: 3s
         retries: 5
         start_period: 10s
+
+
+  elasticsearch:
+      image: elasticsearch:8.12.0
+      container_name: elasticsearch
+      environment:
+        - discovery.type=single-node
+        - xpack.security.enabled=false
+        - xpack.security.http.ssl.enabled=false
+        - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      ulimits:
+        memlock:
+          soft: -1
+          hard: -1
+      volumes:
+        - esdata:/usr/share/elasticsearch/data
+      ports:
+        - "9200:9200"
+      healthcheck:
+        test: [ "CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1" ]
+        interval: 10s
+        timeout: 10s
+        retries: 10
+        start_period: 30s
+      restart: always
+  kibana:
+    image: kibana:8.12.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"     # پورت ارتباط برای برنامه‌ها
+      - "15672:15672"   # پنل مدیریتی UI
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbit
+      RABBITMQ_DEFAULT_PASS: rabbit
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+volumes:
+  esdata:
 

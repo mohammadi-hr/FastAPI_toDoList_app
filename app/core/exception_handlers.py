@@ -1,7 +1,8 @@
 from fastapi.exceptions import RequestValidationError
 from fastapi import Request
 from starlette.responses import JSONResponse
-
+import logging
+from app.core.exceptions import AppException
 
 def validation_exception_handler(request:Request, exc: RequestValidationError):
     exc_details = list[dict] = []

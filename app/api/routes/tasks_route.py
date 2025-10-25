@@ -16,7 +16,7 @@ from urllib.request import urlopen
 import json
 from app.scripts.dummy_task_generator import DummyTaskGenerator
 from app.core.redis import get_redis
-
+from app.messaging.publisher import publish_message
 router = APIRouter()
 
 
@@ -61,6 +61,7 @@ def get_task(
     user: UserModel = Depends(get_user_by_token_in_cookie),
     db: Session = Depends(get_db),
 ):
+
     return task_service.get_task(user, task_id, db)
 
 
@@ -75,6 +76,9 @@ async def create_task(
     task = task_service.create_task(user, task_add, db)
 
     await redis.delete("tasks:all")
+
+    # publish message in rabbitMQ
+    publish_message('q1',task)
 
     return task
 

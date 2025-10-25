@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     ALGORITHM: str
     SQLALCHEMY_TEST_DATABASE_URL: str = "sqlite:///:memory:"
 
+    RABBITMQ_HOST: str
+    RABBITMQ_USER: str
+    RABBITMQ_PASSWORD: str
+    RABBITMQ_PORT: int
+
     class Config:
         env_file = (
             ".env.test" if "PYTEST_CURRENT_TEST" in os.environ else ".env"
