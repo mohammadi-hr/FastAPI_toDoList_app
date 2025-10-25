@@ -16,7 +16,9 @@ from urllib.request import urlopen
 import json
 from app.scripts.dummy_task_generator import DummyTaskGenerator
 from app.core.redis import get_redis
-from app.messaging.publisher import publish_message
+from app.messaging.publisher import publish_message, publish_log
+from fastapi import Request
+
 router = APIRouter()
 
 
@@ -68,6 +70,7 @@ def get_task(
 @router.post("/", response_model=TaskResponseSchema)
 async def create_task(
     task_add: TaskCreateSchema,
+    request: Request,
     user: UserModel = Depends(get_user_by_token_in_cookie),
     db: Session = Depends(get_db),
     redis=Depends(get_redis),
@@ -77,8 +80,22 @@ async def create_task(
 
     await redis.delete("tasks:all")
 
+    extra={
+        "task_id": task.id,
+        "user_id": task.user_id,
+        "title": task.title,
+        "description": task.description,
+        "priority": task.priority,
+        "created_at": getattr(task.created_at, "isoformat", lambda: None)(),
+        "updated_at": getattr(task.updated_at, "isoformat", lambda: None)(),
+        "due_date": getattr(task.due_date, "isoformat", lambda: None)(),
+        "is_completed": task.is_completed,
+
+    }
+
     # publish message in rabbitMQ
-    publish_message('q1',task)
+    publish_message(request, 'q1',task.title)
+    publish_log(request, log_level='logging_info', message=task.description,extra=extra)
 
     return task
 

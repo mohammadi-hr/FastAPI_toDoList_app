@@ -11,7 +11,7 @@ class TaskBaseSchema(BaseModel):
     description: Optional[str] = Field(max_length=512)
     due_date: Optional[datetime] = Field(description="when the task must be done")
     user_id: int
-    task_priority: TaskPriority = TaskPriority.NORMAL
+    priority: TaskPriority = TaskPriority.NORMAL
 
 
 class TaskCreateSchema(TaskBaseSchema):

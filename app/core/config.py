@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     RABBITMQ_PASSWORD: str
     RABBITMQ_PORT: int
 
+    ELASTICSEARCH_HOST: str
+
     class Config:
         env_file = (
             ".env.test" if "PYTEST_CURRENT_TEST" in os.environ else ".env"

@@ -23,7 +23,7 @@ services:
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379/0
 
-      # ✅ اضافه شده برای RabbitMQ
+      # RabbitMQ
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: rabbit

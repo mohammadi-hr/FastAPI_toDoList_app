@@ -18,10 +18,12 @@ import pika
 from fastapi.responses import PlainTextResponse
 import logging
 
+rabbitMQ_connection = None
+rabbitMQ_channel = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    global rabbitMQ_connection, rabbitMQ_channel
 
     # Initialize Redis connection manually
     redis = await get_redis()
@@ -39,10 +41,10 @@ async def lifespan(app: FastAPI):
     rabbitMQ_channel = rabbitMQ_connection.channel()
 
     # Store inside FastAPI state (not as globals)
-    app.state.rabbitmq_connection = rabbitMQ_connection
-    app.state.rabbitmq_channel = rabbitMQ_channel
+    app.state.rabbitMQ_connection = rabbitMQ_connection
+    app.state.rabbitMQ_channel = rabbitMQ_channel
 
-    print("RabbiMQ Connection initialized")
+    print("✅ RabbitMQ Connection Initialized")
 
     yield
     await redis.aclose()
@@ -65,6 +67,13 @@ app = FastAPI(
 
 app.include_router(tasks_route.router, prefix="/tasks", tags=["Tasks"])
 app.include_router(users_route.router, prefix="/users", tags=["Users"])
+
+
+@app.middleware("http")
+async def add_rabbitmq_to_request(request: Request, call_next):
+    request.state.rabbitMQ_channel = request.app.state.rabbitMQ_channel
+    response = await call_next(request)
+    return response
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
